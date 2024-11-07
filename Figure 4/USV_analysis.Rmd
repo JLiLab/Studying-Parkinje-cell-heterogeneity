@@ -1,0 +1,127 @@
+---
+title: "for Figure 4C-D"
+output: html_notebook
+R Script for Quantitative Analysis of Ultrasonic Vocalizations (USVs) in Mouse Pups
+Author: James Li
+Purpose: This script performs data processing, statistical analysis, and visualization
+of USV data collected from mouse pups separated from their mother and littermates.
+Analysis includes comparisons across genotypes, groups, ages, and sexes to assess
+the influence of genetic modifications and other factors on USV frequency and body weight.
+Additional statistical tests such as t-tests and ANOVA are conducted to evaluate differences
+across experimental conditions.
+---
+
+
+```{r}
+# Load required libraries
+library(tidyverse)   
+library(readxl)       
+library(cowplot)
+```
+
+# Load and filter data
+```{r}
+tab <- read_excel("CallStatitics.xlsx", sheet= "Summary") %>%
+  filter(Outlier == 'no')
+
+# Define factors for categorical variables with specified levels
+tab$Genotype <- factor(tab$Genotype, levels = c("CTRL", "P2-Het", "P2-cKO", "P1-cKO", "P1-Het.a", "P1-cKO.a"))
+tab$Group <- factor(tab$Group, levels = c("Foxp2_En1cre", "Foxp1_En1cre", "Foxp1_Atoh1cre"))
+tab$Sex <- factor(tab$Sex, levels = c("M", "F"))
+tab$Age <- factor(tab$Age, levels = c("P4", "P6", "P8", "P10"))
+
+# Reshape data for plotting
+tab.l <- tab %>%
+  filter(Repeat == "No") %>%
+  dplyr::select(Recordings, Group, ID, Age, Sex, Genotype, `39-67k_Count`:Total_Count) %>%
+  gather(variable, value, `39-67k_Count`:Total_Count) %>%
+  separate(variable, c('frequency', 'measure'), sep = "_")
+
+# Set factor levels for frequency variable
+tab.l$frequency <- factor(tab.l$frequency, levels = c("39-67k", "74-95k", "104-125k", 'Total'))
+
+# Filter data for specific conditions (P6 age and 'Count' measure)
+tab_d6 <- tab.l %>% filter(Age == "P6" & measure == 'Count')
+```
+
+
+```{r}
+# Analysis for 'Total' frequency at P6
+tab_day6 <- tab.l %>% filter(Age == "P6" & frequency == 'Total')
+
+
+# Plot USV analysis across groups at P6 (Total frequency)
+p <- ggplot(data = tab_day6, aes(x = Genotype, y = value, color = Genotype)) +
+  facet_wrap(~Group, scales = "free") +
+  geom_boxplot() +
+  geom_point(aes(fill = Genotype), size = 3, shape = 21, position = position_jitter(width = 0.2)) +
+  theme_cowplot() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "", y = "Counts") +
+  ggtitle("USV analysis on P6")
+p
+
+# # Save plots to PDF
+# pdf("USV_P6_total1.pdf", h = 5, w = 7)
+# print(p)
+# dev.off()
+```
+
+# Table summary
+```{r}
+table(tab_day6$Genotype, tab_day6$Group)
+```
+```{r}
+table(tab_day6$Genotype, tab_day6$Sex, tab_day6$Group)
+```
+
+# Statistical Analysis for Specific Genotypes and Groups
+```{r}
+# Perform a t-test on USV data comparing Genotype within the Foxp1_En1cre group at P6, Total frequency
+tab.p1 <- tab.l %>% filter(Age == "P6" & frequency == 'Total' & Group == 'Foxp1_En1cre')
+t.test(value ~ Genotype, data = tab.p1)
+```
+
+
+```{r}
+# Perform ANOVA on the Foxp1_Atoh1cre group at P6, Total frequency to compare Genotypes
+tab.p1a <- tab.l %>% filter(Age == "P6" & frequency == 'Total' & Group == 'Foxp1_Atoh1cre')
+ANOVA <- aov(value ~ Genotype, data = tab.p1a)
+summary(ANOVA)
+```
+
+```{r}
+# Perform ANOVA on the Foxp2_En1cre group at P6, Total frequency to assess Genotype effects
+tab.p2 <- tab.l %>% filter(Age == "P6" & frequency == 'Total' & Group == 'Foxp2_En1cre')
+ANOVA <- aov(value ~ Genotype, data = tab.p2)
+summary(ANOVA)
+
+# Perform post hoc analysis using Tukey's HSD for pairwise comparison of Genotypes within Foxp2_En1cre group
+TukeyHSD(ANOVA)
+```
+
+# test sex difference among CTRL
+```{r}
+tab_WT <- tab.l %>% filter(Age=="P6" & frequency=='Total' & Genotype == "CTRL")
+
+p2 <- ggplot(data = tab_WT, aes(x = Sex, y = value, color = Sex))+
+  # facet_wrap(~Group, scales = "free")+
+  geom_boxplot()+
+  geom_point(aes(fill = Sex), size = 3, shape = 21,position=position_jitter(width=0.2))+
+  theme_cowplot()+
+  theme(legend.position = "none")+
+  labs(x="",y="Counts") +
+  ggtitle("USV between male and female control mice")
+p2
+
+# pdf("USV_Control.pdf", h =4, w =5)
+# plot_grid(p1,p2, rel_widths = c(3,2.3))
+# dev.off()
+```
+
+
+```{r}
+ANOVA=aov(value~Sex*Group, data=tab_WT)
+summary(ANOVA)
+```
+
