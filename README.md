@@ -23,4 +23,4 @@ This project is licensed under the MIT License.
 **FOXP Genes Regulate Purkinje Cell Diversity in Cerebellar Development and Evolution**  
 Nagham Khouri-Farah, Qiuxia Guo, Thomas A. Perry, Ryan Dussault, and James Y.H. Li (2024)
 
-[biorxiv preprint]([https://www.biorxiv.org/content/xxx](https://doi.org/10.1101/2024.11.07.622485))
+[biorxiv preprint](https://doi.org/10.1101/2024.11.07.622485)
